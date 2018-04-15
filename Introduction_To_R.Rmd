@@ -1,0 +1,726 @@
+---
+title: "R Tutorial"
+author: "Avalon"
+date: "01/30/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table) # advanced version data.frame(optional)
+library(rvest) # for web scraping(optional)
+library(dplyr) # for data wrangling
+library(rbenchmark) # for testing different models or functions(Unnecessary)
+library(ggplot2) # for visualization(optional)
+library(factoextra) # for visualization(optional)
+library(stringi) # for string manipulation(optional)
+library(readxl) # for reading excel file
+library(glmnet) # for ridge、lasso and elastic net
+library(plotly) # for visualization(optional)
+library(GGally) # for Visualization(Unnecessary)
+library(psych) # for factor analysis(Unnecessary)
+library(forcats) # for manipulating categorical data(Unnecessary)
+```
+
+## Basic ideas about R
+
+Vector是R語言裡面最基礎的資料型態，像是在統計裡面的ratio data, interval data等。不同的資料型態會有不同的應用
+情境。我們將會在下面的chunk介紹這六種不同的vector。
+
+```{r}
+is.integer(1L) # 0, -1, 1, -2 ,2... - integer
+is.numeric(1.358) # number with digits - numeric
+is.complex(1 + 7i) # number with i - complex
+is.character("marketing") # string - characters
+is.logical(TRUE) # TURE or FALSE - logical(boolean)
+is.factor(factor(c("Marketing", "Accounting"))) # some labels - factor
+```
+
+---
+
+R提供了完整的數值比較運算模式，與一般使用的數學符號相同
+```{r}
+5 > 3 # greater
+5 < 7 # less
+7 == 8 # equal to
+7 != 8 # not equal to
+5 >= 5 # greater or equal to
+8 <= 10 # less than or equal to
+!(7 > 8) # inverse logical expression
+```
+
+---
+
+除了數值比較邏輯之外，整合and與or等邏輯可以使邏輯的變化性更加多元，更符合
+一般使用的情境
+```{r}
+5 > 3 & 8 > 9 # and
+5 > 3 | 8 > 9 # or
+xor(TRUE, TRUE) # return TRUE if only one of two expression is TRUE
+xor(TRUE, FALSE)
+5 %in% 5 : 10 # show if 5 belongs to the vector, 5 to 10
+4 %between% c(3, 5) # show if 4 locates between 3 and 5
+```
+
+---
+
+Logical在R裡面視為一種特殊數值的型態，可以作為加減的用途，TRUE實質上在紀錄的時候是1而FALSE為0，因此實務上
+logical的加減是被允許而且常被用來統計符合特定條件的值的個數。
+```{r}
+TRUE + TRUE # Equal to 1 + 1
+TRUE - FALSE # Equal to 1 - 0
+TRUE == 1 # Equal to ask whether 1 == 1
+FALSE == 0 # Equal to ask whether 0 == 0
+TW <- 1 : 5
+sum(TW > 3) # Equal to FALSE + FALSE + FALSE + TRUE + TRUE or 0 + 0 + 0 + 1 + 1
+```
+
+---
+
+List是一種可以包含不同vector型態的一種資料格式，擁有不容易受到改動的特性。Matrix是一種二維的資料型態，通常用於
+向量化的科學運算。
+
+```{r}
+list(1, 1.358, 1 + 7i, "marketing")
+matrix(1 : 12, nrow = 4, ncol = 3) # A 4 by 3 matrix
+matrix(1 : 4, 2, 2) + matrix (5 : 8, 2, 2) # matrix addition
+matrix(1 : 4, 2, 2) * matrix(5 : 8, 2, 2) # element-wise multiplication
+matrix(1 : 4, 2, 2) %*% matrix(5 : 8, 2, 2) # general matrix multiplication
+t(matrix(1 : 4, 2, 2)) # t stands for transpose
+diag(matrix(1 : 4, 2, 2)) # diag function allows you to construct elements of dignoal or extract diagnol elements
+diag(3) # creating identity matrix by n
+det(matrix(1 : 4, 2, 2)) # obtaing determinant
+solve(matrix(1 : 4, 2, 2)) # this allows you to obtain inverse matrix
+matrix(1 : 4, 2, 2) %*% solve(matrix(1 : 4, 2, 2)) # checking whether the inverse matrix is correct
+```
+
+---
+
+c function是一個能串接資料的函數
+
+```{r}
+c(1, 2, 3, 4, 5)
+c(6, 7, 8, 9, 10)
+c(c(1, 2, 3), c(4, 5, 6))
+c("Dr.", "Chen", "is", "brilliant")
+c(1 + 8i, 0 + 3i, 4 + 99i)
+```
+
+---
+
+實務上，我們常常需要使用相同的資料來做不同的運算，如果每次都需要重新計算一次同樣的數值會造成冗雜的過程與
+計算上的負擔，因此我們可以將計算完的數值或資料儲存在某一個變數裡面，在後來的計算與使用上可以更加便捷的呼喚
+同一個數值。"<-" 與 "->"在R語言裡頭被定義為assign符號，一般使用上"="一樣可以得到同樣的效果，但是在某些特殊
+情境之下會造成錯誤，因此不建議使用"="來替代assign符號。
+
+```{r}
+NCHU <- c(1, 2, 3, 4) # "<-", "->" are termed as assign symbol
+c(1, 2, 3, 4) -> UCCU # it works as previous one
+print(NCHU) # print function allows you to print out the content in the variable
+identical(NCHU, UCCU) # identical function allows you to check whether the values of two variables are identical
+Clarkson = c(1, 2, 3 ,4) # "=" generally can yield the same output
+print(Clarkson)
+NCHU + 1 # we could do arithmeric operation to those variables directly
+Marketing <- NCHU ^ 2 # We could also assign value to second variable after manipulating the first variable
+print(Marketing) # "^" denotes square
+```
+
+---
+
+基礎函數
+**注意 : R是一個對於大小寫有區分的程式語言，大小寫不同會被視為不同的變數**
+```{r}
+Oreo <- sample(1 : 10, 10, replace = FALSE) # sample function allows you to select numbers randomly
+print(Oreo) # Let us check the content of variable
+length(Oreo) # length function will return the number of elements in a variable
+sort(Oreo) # If a variable is numeric or integer type, sort function would allow you to sort them either or                         increasingly decreasingly
+order(Oreo) # order function returns the position of the elements either in increasing or decreasing order
+rev(Oreo) # Conspicuously, it merely reverses the vector
+kitkat <- sample(1 : 5, 6, replace = TRUE)
+print(kitkat)
+unique(kitkat)
+duplicated(kitkat)
+```
+
+---
+
+
+```{r}
+Oreo[3] # We could call specific elements by adding two braket
+Oreo[c(1, 3, 5, 7, 9)] # multiple selection is allowed
+5 > 3 # Logicial statement could generate logical value
+Oreo[Oreo > 5] # Logical value could be used to select values in variables
+Oreo[Oreo > 3 & Oreo <= 8] # multiple filters are viable, & stands for "and"
+Oreo[Oreo > 5 | Oreo == 3] # | stands for "or"
+which.max(Oreo) # which series can return the position of given elements
+which.min(Oreo)
+which(c(TRUE, FALSE, TRUE)) # which function returns the position of elements which are TRUE
+Oreo[which.max(Oreo)] # Combining these two kind of operations
+Oreo[which.min(Oreo)]
+```
+
+---
+
+if statement是一種電腦對於boolean值判定後執行特定動作的語法，常常使用在各種語法情境之中
+
+```{r}
+Newton <- 5
+if (Newton > 7) {
+  print("good")
+}
+
+if (Newton > 3) {
+  print(Newton)
+}
+
+if (Newton > 5) {
+  print("Good")
+} else {
+  print("Bad")
+}
+
+Coke <- "pikachu"
+if (Coke == "squirtle") {
+  print("squirtle")
+} else if (Coke == "charmander") {
+  print("Charmander")
+} else if (Coke == "pikachu") {
+  print("pikachu")
+}
+```
+
+---
+
+除了if statement之外，for loop及while loop也是在任何programming language裏頭無可或缺的重要工具 
+
+```{r}
+Init <- 1 # We first assign a initial value
+for (i in 1 : 5) {
+  Init <- Init + 1
+  print(Init)
+}
+print(Init) # checking the output
+
+Init <- 1 # Reassinging initial value
+for (i in 1 : 5) {
+  Init <- Init + i
+  print(Init)
+}
+```
+
+while loop 提供使用者另外一個選項，但必須要注意的是錯誤的使用While loop有可能導致infinite loop
+
+```{r}
+Init <- 1 # As steps above
+while (Init < 10) {
+  Init <- Init + 1
+}
+print(Init) # checking final output
+```
+
+---
+
+R是一個function base的程式語言，function是使整個R語言運作的重要工具，使用者可以自己定義常用的
+運算並儲存成一個自定義function並可以呼叫它來運作
+
+```{r}
+square <- function(x) {
+  return (x ^ 2)
+}
+square(5)
+
+is_even <- function(x) {
+  if (x %% 2 == 0) {
+    return (TRUE)
+  } else {
+    return (FALSE)
+  }
+}
+is_even(13)
+
+No_Arg <- function() {
+  print("Argument is not necessary")
+}
+No_Arg()
+
+Arb_Arg <- function(x, y, z, r = TRUE) {
+  print(sort(c(x, y, z), decreasing = r))
+}
+
+Arb_Arg(3, 99, 1) # we create a more complex function and assign a default argument
+Arb_Arg(3, 99, 1, FALSE) # We can assign value to the default argument
+Arb_Arg(r = FALSE, 3, 99, 1) # We can swap the position by pointing out the name of argument
+
+Detector <- function(user) {
+  if (user == "teacher") {
+    print("Authenticated")
+  } else if (user == "student") {
+    print("Anauthenticated")
+  } else {
+    print("Unauthenticated")
+  }
+}
+Detector("teacher")
+Detector("student")
+Detector("Bad guy")
+Detector("Teacher")
+```
+
+接下來我們將會用稍微複雜一點的fibonacci sequence作為function的例子
+
+```{r}
+fibonacci <- function(len) {
+  # computes fibonacci sequence based on given length of the sequence
+  #
+  # Args :
+  #   len : Length of the fibonacci sequence
+  #
+  # Returns : a well-constructed fibonacci sequence
+  
+  # We set a checker here to prevent from setting unexpected parameter to the argument "len"
+  # The checker is assessing if the argument "len" return a value which is less than 0 or
+  # the value is not an integer. Since both cases do not make sense in any scenarios.
+  if (len <= 0 | len %% 1 != 0) {
+    stop("The argument len is smaller than 0 or not an integer")
+  }
+  
+  # Preallocation of target vector allows us to reduce ram usage and processing time.
+  Initial <- vector("integer", length = len)
+  Initial[1 : length(Initial)] <- 1 # The given initial points of fibonacci sequence
+  
+  # Since it is unnecessary to calculate the following number in the sequence if the assigned length is
+  # less than 3. We just merely set a checker here and return 1 or 1, 1 while the length is 1 or 2.
+  # Otherwise, we build a for loop to calculate the following sequence based on fibonacci rule.
+  if (len < 3) {
+    return (Initial[1 : len])
+  } else {
+    for (i in 1 : (len - 2)) {
+      Initial[i + 2] <- sum(Initial[i : (i + 1)])
+    }
+    return (Initial)
+  }
+  
+}
+```
+
+---
+
+(Optional)接下來要介紹的是進階的apply系列的function，成員有sapply、lapply、apply...等，這個系列的function
+相較於前面的function都要更加抽象，需要一定的時間去適應它的邏輯與概念，因此這部分是屬於附加的內容。若有興趣
+可以在完成R基本的tutorial之後再回來看幾這個function。
+
+```{r}
+x <- c(1, 4, 9, 16, 25)
+result_sapply <- sapply(x, sqrt)
+result_lapply <- lapply(x, sqrt)
+class(result_sapply)
+class(result_lapply)
+print(result_sapply)
+print(result_lapply)
+result_sapply_notsim <- sapply(x, sqrt, simplify = FALSE)
+identical(result_lapply, result_sapply_notsim)
+y <- 1 : 5
+virtual_output1 <- sapply(y, function(k) {
+  k ^ 2
+})
+virtual_output2 <- lapply(y, function(p) {
+  (p / 5) + 1
+})
+print(virtual_output1)
+print(virtual_output2)
+sapply(1 : 5, function(k) {
+  paste0("student", k)
+})
+```
+
+---
+
+接下來要介紹如何從外部讀入資料進R，除了這些方法之外還有很多其他的方法，但是這些方法在這個tutorial範圍之外
+
+```{r}
+kie <- read.csv("iris.csv") # for comma seperated file
+head(kie)
+zoo <- read_excel("Titanic.xlsx") # for Excel file
+head(zoo)
+```
+
+其他讀入資料的方法，因為此進階function來自package(data.table)，僅為展示平行讀取的差異
+```{r, echo = FALSE}
+benchmark(
+  "Built-in" = {
+    Data1 <- read.csv("bitstampUSD_1-min_data_2012-01-01_to_2018-01-08.csv")
+  },
+  "Fread_With_Single" = {
+    Data2 <- fread("bitstampUSD_1-min_data_2012-01-01_to_2018-01-08.csv", nThread = 1)
+  }, "Fread_With_Multi" = {
+    Data3 <- fread("bitstampUSD_1-min_data_2012-01-01_to_2018-01-08.csv", nThread = 4)
+  }, replications = 1)
+```
+
+---
+
+data.frame是R裡面二維資料儲存最重要的資料型態，基本上與Excel的sheet型態類似。
+
+```{r}
+summary(iris) # obtain the basic information of a data.frame
+str(iris) # obtain another important information about data.frame
+dim(iris) # obtain the number of row and column
+nrow(iris) ; ncol(iris) # another way to obtain numbers of row and column
+head(iris) # 
+```
+
+Basic operations of data.frame
+```{r}
+iris[1 : 5, 1 : 3] # the number before comma refers to the row number and the number after comma refers to the column number
+iris$Sepal.Length # $ sign allows you to extract given column value, and this is also a vector
+iris$Sepal.Length[1 : 10]
+iris[iris$Sepal.Length > 7,] # We can use logical values to filter data.frame. If we left either part of the argument before comma and the argument after comma blank, it implies that all rows or columns are selected
+iris$IamNewbee <- 1 # you can broadcast a single value or multiple value to the columns in data.frame
+head(iris)
+iris$IamNewbee <- c(1, 2)
+head(iris)
+
+```
+
+---
+
+## Pipeline - pipeline賦予R語言更簡潔更直觀的表述方式，能夠有效增加程式碼的可讀性
+
+如果你想在一行裡面執行許多的計算，那麼便會使整個程式碼複雜難懂，在後來debug的過程中也不容易發現錯誤，
+pipeline使R能夠簡單易懂的寫出可讀性高的程式碼，下面為重重包裹的程式碼與使用pipeline寫出來的程式碼，可以
+發現兩者的結果是相同的，但是pipeline的程式碼使我們更好理解到底程式碼執行了什麼樣的計算
+```{r}
+tarvec <- rnorm(10, 0, 1)
+example1 <- sd(sqrt(tarvec + 10)) # This is something that you want to prevent from happening.
+example2 <- (tarvec + 10) %>% sqrt %>% sd # Pipeline enhances the readbility
+identical(example1, example2)
+```
+
+dplyr package提供六種在資料處理時十分常用的六個function分別是filter, select, arrange, mutate, summarise, and group
+```{r}
+iris %>% filter(Sepal.Length > 7) # filter by Sepal.Length > 7
+iris %>% filter(Sepal.Length > 7 & Sepal.Width > 3) # filter by multiple features
+iris %>% filter(Sepal.Length > 7) %>% select(1 : 4) # select allows you to pick given columns
+iris %>% filter(Sepal.Length > 7) %>% select(-5) # same output as the one above
+iris %>% filter(Sepal.Length > 7) %>% arrange(Sepal.Length) # arrange allows you to rearrange your row order
+iris %>% filter(Sepal.Length > 7) %>% arrange(-Sepal.Length) # decreasing order instead of ascending
+iris %>% filter(Sepal.Length > 7) %>% arrange(Sepal.Length, Sepal.Width) # arrange by two features
+iris %>% filter(Sepal.Length > 7) %>% select(-5) %>% mutate(bonus.length = Sepal.Length + 1) # mutate allows you to generate new features
+iris %>% summarise(zoo = mean(Sepal.Length), hospital = median(Sepal.Width),
+                   spring = n(), applepie = sd(Petal.Width))
+iris %>% group_by(Species) %>% summarise(morgan = mean(Sepal.Length), nick = median(Sepal.Width), semi = sd(Petal.Width), bob = n())
+
+```
+
+---
+
+## Demonstration of packges and functions
+
+
+student's t-Test
+```{r}
+zoe <- sample(1 : 50, 100, replace = TRUE)
+t.test(zoe, mu = 25) # t-test require the population whose distribution
+                     # is normal distribution; though, it is robust to
+                     # those violations
+lucy <- sample(1 : 50, 100, replace = TRUE)
+t.test(zoe, lucy, paired = TRUE)
+aa <- rnorm(20, 5, 1) # generate normally distributed sequence with mean = 5
+                      # and standard deviation = 1
+bb <- rnorm(20, 5, 1)
+t.test(aa, bb, var.equal = TRUE)
+cc <- rnorm(20, 15 ,1)
+dd <- rnorm(20, 5, 5)
+var.test(cc, dd) # Variance-test is vulnerable to the violation of the 
+                 # assumption that the population is normally distributed
+```
+
+One-Way-ANOVA
+```{r}
+value <- lapply(c(10, 30, 35 ,70), function(k) {
+  rnorm(10, k, sd = sample(1 : 10, 1))
+}) %>% do.call(c, .)
+data_ANOVA <- data.frame(value = value, group = factor(rep(1 : 4, each = 10)))
+head(data_ANOVA, 20)
+aov_result <- aov(value ~ group, data = data_ANOVA)
+summary(aov_result)
+TukeyHSD(aov_result)
+```
+
+
+Two-Way-ANOVA
+```{r}
+value <- sample(1000, 60) # sample 60 values from range 1 to 1000
+two_way_data <- data.frame(
+  carbrand = rep(c("Toyota", "BMW", "Nissan", "Audi"), each = 15),
+  region = rep(c("US", "EU", "JP", "TW", "KR"), times = 12),
+  miles = value
+)
+two_way_result <- aov(miles ~ carbrand * region, data = two_way_data)
+summary(two_way_result)
+```
+
+```{r, echo = FALSE}
+Temp1 <- ggplot(data = data_ANOVA, aes(group, value, fill = group)) + geom_boxplot()
+Temp2 <- plot_ly(two_way_data, x = ~carbrand, y = ~miles, color = ~region, type = "box") %>%
+  layout(boxmode = "group")
+ggplotly(Temp1)
+Temp2
+```
+
+簡單線性迴歸 - R在fit線性模型上面有非常簡潔的方法，只需要一行就能完成fit的過程並評估成果
+```{r}
+kie <- read.csv("Advertising.csv")
+Linear_Regression <- lm(Sales ~ TV, data = kie)
+summary(Linear_Regression)
+predict(Linear_Regression, newdata = data.frame(TV = seq(20, 200, 20)))
+```
+```{r, echo = FALSE}
+ggplot(data = kie, aes(TV, Sales)) + geom_point() + geom_smooth(method = lm)
+```
+
+羅吉斯迴歸是一種類似簡單線性迴歸的分類器，再經過sigmoid Function的非線性轉換之後
+成為一種簡單但是解釋性高的分類器。
+![sigmoid](https://cdn-images-1.medium.com/max/1600/1*Xu7B5y9gp0iL5ooBj7LtWw.png)
+```{r}
+CO2$Type <- factor(CO2$Type, levels = c("Mississippi", "Quebec"))
+CO2$Type <- as.numeric(CO2$Type) - 1
+```
+
+```{r, echo = FALSE}
+ggplot(CO2, aes(uptake, Type)) + geom_point(aes(color = Type))
+```
+
+```{r}
+Logi <- glm(Type ~ uptake, data = CO2, family = binomial(link = "logit"))
+summary(Logi)
+answer <- predict(Logi, newdata = data.frame(uptake = seq(1, 50, 2), type = "response"))
+answer > 0.5
+```
+
+```{r, echo = FALSE}
+ggplot(CO2, aes(uptake, Type)) + geom_point() +
+  geom_smooth(method = "glm", method.args = list(family = "binomial")) + ylab(label = "probability")
+```
+
+
+---
+
+![fitting plot](https://i.stack.imgur.com/t0zit.png)
+
+
+Regularization(正則化)將模型複雜度納入目標變數使整個模型盡量簡單化避免overfitting
+我們介紹兩個不同的迴歸，分別是ridge與lasso regression，這兩種迴歸分別納入不同的正則項
+
+
+![regularization term](https://cdn-images-1.medium.com/max/1600/1*dM-1ZeIIwbB7wS3PtqKOGQ.png)
+
+---
+
+我們在這裡會介紹引入這兩種正則項的迴歸模型分別是ridge regression與lasso regression，這兩種
+模型都被package(glmnet)所包含，透過調整\alpha可以產生第三種模型elstic net，但這在這個tutorial
+之外，如果同學有興趣可以自己去尋找資源來研究。
+
+```{r}
+kie <- read.csv("Advertising.csv")
+kie$TVSQ <- kie$TV ^ 2
+kie$RadioSQ <- kie$Radio ^ 2
+kie$NewspaperSQ <- kie$Newspaper ^ 2
+Simple_Model <- lm(Sales ~ ., data = kie)
+Ridge_Model <- glmnet(kie %>% select(-Sales) %>% as.matrix, kie$Sales, alpha = 0, lambda = 10 ^ -1)
+Lasso_Model <- glmnet(kie %>% select(-Sales) %>% as.matrix, kie$Sales, alpha = 1, lambda = 10 ^ -1)
+cbind(Simple_Model %>% coef, Ridge_Model %>% coef, Lasso_Model %>% coef) %>% as.matrix %>% data.frame %>%
+  `colnames<-`(c("Simple", "Ridge", "Lasso"))
+```
+
+
+---
+
+## 卡方獨立性檢定
+
+```{r}
+survey <- MASS::survey
+test_table <- table(survey$Smoke, survey$Exer)
+test_table
+chisq.test(test_table)
+advan_table <- cbind(test_table[, 1], test_table[, 2] + test_table[, 3])
+dimnames(advan_table)[[2]] <- c("Freq", "seldom")
+advan_table
+chisq.test(advan_table)
+```
+
+```{r}
+head(mtcars, 10)
+target_table <- table(mtcars$carb, mtcars$cyl)
+chisq.test(target_table)
+```
+
+---
+
+## Kmeans
+
+kmeans 是一種非監督式學習的演算法，可以在不給予外部資訊的情況下試圖在特徵之間嘗試找出適當的分類模式，因為
+演算法本身的緣故，執行約100次的kmeans去找出global optimum是一個合理的選擇，若iteration的次數太少，很可能會出現
+很不合理的分類方法
+
+```{r}
+clustering <- kmeans(x = iris[, -5], centers = 3, iter.max = 300)
+table(iris$Species, clustering$cluster)
+fviz_cluster(clustering,
+             data = iris[, -5],
+             geom = c("point", "text"),
+             ellipse.type = "norm")
+```
+
+
+```{r}
+K_test <- sapply(2 : 15, function(k) {
+  kmeans(x = iris[, -5], centers = k, iter.max = 300)$tot.withinss
+})
+plot(x = 2 : 15, y = K_test, type = "b", xlab = "number of clusters", ylab = "within groups squared error")
+```
+
+```{r, echo = FALSE}
+p1 <- ggplot(data = iris, aes(Sepal.Length, Petal.Length, color = Species)) + geom_point() + theme_bw()
+new_cluster <- clustering$cluster %>% as.factor %>% 
+  fct_recode(setosa = "1", versicolor = "3", virginica = "2") %>%
+  fct_relevel("setosa", "versicolor", "virginica")
+p2 <- ggplot(data = iris, aes(Sepal.Length, Petal.Length, color = new_cluster)) + geom_point() +
+  theme_bw() + labs(label = "Clustering")
+The_Plot <- gridExtra::grid.arrange(p1, p2, nrow = 1)
+The_Plot
+```
+
+
+---
+
+## Principal Component Analysis
+
+PCA(Principal ComponentAnalysis)是一種最為普遍的降維演算法，PCA是一種有損的
+降維算法，其目的是在於在可接受的資訊遺失上將高維度的資料減低成低維度的資料，
+普遍來說選擇特徵值大於1或者畫出陡坡度並選擇特定維度使資訊損失的程度在研究
+或應用上可接受的程度。大部分PCA的科學應用是除去高度重複的維度、視覺化的要求
+及加速演算法這幾種需求。
+
+
+```{r, echo = FALSE}
+cancer <- read.csv("cancer.csv") # Reading in data
+cancer[, 31] <- as.factor(cancer[, 31])
+ggpairs(cancer, columns = 1 : 5, mapping = ggplot2::aes(color = Cancer.Type), title = "pairwise plot")
+```
+
+```{r}
+cancer[, 31] <- ifelse(cancer$Cancer.Type == 1, "benign", "malignant")
+PCA <- prcomp(cancer[, -31], scale. = TRUE, center = TRUE) # Implementing PCA on the data except the target column
+Info <- data.frame(summary(PCA)$importance) %>% transpose()
+```
+
+```{r, echo = FALSE}
+ggplot(data = Info, aes(1 : 30, V3)) + geom_point() + geom_line() + xlab("Principal Components") + 
+  ylab("Remaining Info")
+plot_ly(x = colnames(PCA$rotation), y = rownames(PCA$rotation),
+        z = as.matrix(PCA$rotation[, 1 : 2]), type = "heatmap",
+        colorscale = "Portland", zmin = -0.3, zmax = 0.3)
+```
+
+
+我們在這裡會選擇降維到兩維，因為兩維比較有利於視覺化
+```{r}
+PCA_transformed <- data.frame(PCA$x[, 1 : 2])
+PCA_transformed$Cancer.Type <- cancer[, 31]
+ggplot(data = PCA_transformed, aes(PC1, PC2, color = Cancer.Type)) + geom_point()
+```
+
+---
+
+## Factor Analysis
+
+FA(因素分析)是一種常常與PCA擺在一起的降維演算法，雖然這兩者都擁有可以使
+資料降維的能力，但是其實這兩種算法的假設與原理不盡相同。PCA假設PC是現有
+變數的線性組合而FA則是假設有一群latent variable(潛在變項)的線性組合加上
+error term會形成可觀測的變數。Factor analysis在研究上常用來搜尋潛在的抽象
+變數，例如衛生或某種心理狀態使研究者可以更好的做因果分析。
+
+```{r}
+FA_result <- fa(cancer[, -31], nfactors = 2, rotate = "varimax", fm = "ml")
+FA_result$loadings
+```
+
+---
+
+## Web Scraping
+
+在這個資料爆炸的時代，很多資料都流竄在網頁上頭，這時候就需要一個工具來將他們全部抓取以供後續的分析
+使用，網路爬蟲工具就是因應這樣的需求而生的，R裡頭有許多種不同的爬蟲工具，我們在這裡會簡單介紹Rvest這款
+原生於tidyverse裡頭的package，其他的工具就需要各位自己去尋找及發掘。以下我們會以一個樂透網站作為介紹，
+將長期的樂透資訊抓下來並繪製成bar plot
+[Lottery](http://www.lotto-8.com/listlto539.asp?indexpage=27&orderby=new)
+
+```{r}
+Lottery <- vector(mode = "list", length = 110)
+for (i in 1 : 110) {
+  Lottery[[i]] <- paste0("http://www.lotto-8.com/listlto539.asp?indexpage=", i, "&orderby=new") %>%
+    read_html %>% html_nodes(css = "tr+ tr .auto-style5:nth-child(2) , tr+ tr .auto-style5:nth-child(1)") %>%
+    html_text %>% data.frame(date = .[seq(1, length(.), 2)], number = .[seq(2, length(.), 2)]) %>%
+    select(-.)
+}
+Lottery <- Lottery %>% rbindlist %>% .[, number := stri_trans_general(number, "latin-ascii")]
+head(Lottery, 30)
+number_count <- strsplit(Lottery$number, ",") %>% unlist %>% trimws %>% table %>% as.data.frame
+```
+
+```{r, echo = FALSE}
+Temp <- ggplot(data = number_count, aes(., Freq)) + geom_bar(stat = "identity", fill = "lightblue") +
+ xlab("Number") + ylab("Frequency")
+ggplotly(Temp)
+```
+
+---
+
+## Data Visualization
+
+```{r, echo = FALSE}
+kie <- fread("911.csv")
+kie[, timeStamp := as.POSIXct.default(timeStamp)]
+kie[, `:=`(Hour = lubridate::hour(timeStamp),
+           Weekdays = weekdays(timeStamp, TRUE))]
+pie <- kie[, .N, .(Hour, Weekdays)]
+zoo <- pie %>% tidyr::spread(Weekdays, N) %>% select(-1)
+plot_ly(x = colnames(zoo), y = rownames(zoo), z = as.matrix(zoo), colorscale = "Greys", type = "heatmap")
+```
+
+```{r, echo = FALSE}
+kie <- read.csv("2014_World_GDP")
+l <- list(color = toRGB("grey"), width = 0.5)
+g <- list(showframe = FALSE,
+          showcoastline = FALSE,
+          projection = list(type = "Mercator"))
+zoo <- plot_geo(kie) %>% add_trace(z = ~GDP..BILLIONS., color = ~GDP..BILLIONS., colors = "Reds",
+                                   text = ~COUNTRY, locations = ~CODE, marker = list(line = l),
+                                   type = 'choropleth') %>%
+  colorbar(title = "global GDP", tickprefix = "$") %>%
+  layout(title = "Global GDP", geo = g)
+zoo
+```
+
+---
+
+## Vectorization
+
+```{r}
+test_vector <- rep(0, 1e6)
+benchmark(
+  "Loop" = {
+    for (i in seq_along(test_vector)) {
+      test_vector[i] <- test_vector[i] + 1
+    }
+  },
+  "Vectorization" = {
+    test_vector <- test_vector + 1
+  }
+)
+```
+
+
+
+
